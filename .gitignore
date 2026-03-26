@@ -1,0 +1,6 @@
+artifacts/
+.dotnet-cli/
+.dotnet-home/
+logs/
+**/bin/
+**/obj/

@@ -1,0 +1,98 @@
+@model DaemonAdmin.Web.Models.DashboardViewModel
+
+<section class="hero-panel">
+    <div>
+        <p class="eyebrow">PoC de administración</p>
+        <h1>Daemon Platform Control Center</h1>
+        <p class="hero-copy">
+            Vista administrativa para listar jobs, validar el clúster Quartz activo-activo y ejecutar acciones operativas sobre los workers.
+        </p>
+    </div>
+    <div class="hero-meta">
+        <div class="metric-card">
+            <span class="metric-label">Scheduler</span>
+            <strong>@Model.SystemStatus.SchedulerName</strong>
+        </div>
+        <div class="metric-card">
+            <span class="metric-label">Nodos activos</span>
+            <strong>@Model.SystemStatus.ActiveNodes</strong>
+        </div>
+        <div class="metric-card">
+            <span class="metric-label">Jobs registrados</span>
+            <strong>@Model.SystemStatus.ConfiguredJobs</strong>
+        </div>
+    </div>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Model.FeedbackMessage))
+{
+    <div class="feedback-banner">@Model.FeedbackMessage</div>
+}
+
+<section class="status-grid">
+    @foreach (var node in Model.SystemStatus.Nodes)
+    {
+        <article class="status-card @(node.ConsideredAlive ? "is-healthy" : "is-stale")">
+            <h2>@node.InstanceName</h2>
+            <p>Último check-in UTC: @node.LastCheckinUtc.ToString("u")</p>
+            <p>Intervalo: @node.CheckinInterval</p>
+            <span>@(node.ConsideredAlive ? "Activo" : "Sin check-in reciente")</span>
+        </article>
+    }
+</section>
+
+<section class="jobs-panel">
+    <div class="section-header">
+        <h2>Jobs administrados</h2>
+        <p>La tabla combina información del scheduler Quartz, triggers persistidos e historial PoC.</p>
+    </div>
+    <div class="table-shell">
+        <table class="jobs-table">
+            <thead>
+            <tr>
+                <th>Job</th>
+                <th>Estado</th>
+                <th>Próximo disparo UTC</th>
+                <th>Último nodo</th>
+                <th>Último estado</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var job in Model.Jobs)
+            {
+                <tr>
+                    <td>
+                        <strong>@job.JobName</strong>
+                        <div class="table-subtitle">@job.JobGroup</div>
+                    </td>
+                    <td>@job.EffectiveState</td>
+                    <td>@(job.NextFireTimeUtc?.ToString("u") ?? "Sin trigger")</td>
+                    <td>@(job.LastExecutionNode ?? "Sin ejecución aún")</td>
+                    <td>@(job.LastExecutionStatus ?? "N/D")</td>
+                    <td>
+                        <div class="action-row">
+                            <form asp-action="RunNow" method="post">
+                                <input type="hidden" name="jobGroup" value="@job.JobGroup" />
+                                <input type="hidden" name="jobName" value="@job.JobName" />
+                                <button type="submit">Run now</button>
+                            </form>
+                            <form asp-action="Pause" method="post">
+                                <input type="hidden" name="jobGroup" value="@job.JobGroup" />
+                                <input type="hidden" name="jobName" value="@job.JobName" />
+                                <button type="submit">Pausar</button>
+                            </form>
+                            <form asp-action="Resume" method="post">
+                                <input type="hidden" name="jobGroup" value="@job.JobGroup" />
+                                <input type="hidden" name="jobName" value="@job.JobName" />
+                                <button type="submit">Reanudar</button>
+                            </form>
+                            <a asp-action="Details" asp-route-jobGroup="@job.JobGroup" asp-route-jobName="@job.JobName">Detalle</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

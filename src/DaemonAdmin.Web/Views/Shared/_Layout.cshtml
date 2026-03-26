@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - DaemonAdmin</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="page-shell">
+        <header class="site-header">
+            <div>
+                <p class="eyebrow">Windows Server 2019 · Quartz Cluster</p>
+                <h1>Daemon Platform</h1>
+            </div>
+            <p class="header-copy">Front administrativo para PoC de workers distribuídos en Nodo 1 y Nodo 2.</p>
+        </header>
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+</body>
+</html>

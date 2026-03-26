@@ -1,0 +1,68 @@
+@model DaemonPlatform.Contracts.Models.JobDetailsResponse
+
+<section class="detail-hero">
+    <div>
+        <p class="eyebrow">Detalle de job</p>
+        <h1>@Model.Summary.JobName</h1>
+        <p>@Model.Summary.Description</p>
+    </div>
+    <a asp-action="Index" class="back-link">Volver al dashboard</a>
+</section>
+
+<section class="detail-grid">
+    <article class="detail-card">
+        <h2>Resumen</h2>
+        <p>Grupo: <strong>@Model.Summary.JobGroup</strong></p>
+        <p>Estado: <strong>@Model.Summary.EffectiveState</strong></p>
+        <p>Durable: <strong>@Model.Summary.Durable</strong></p>
+        <p>Recovery: <strong>@Model.Summary.RequestsRecovery</strong></p>
+        <p>Ultimo nodo: <strong>@(Model.Summary.LastExecutionNode ?? "Sin ejecucion aun")</strong></p>
+    </article>
+
+    <article class="detail-card">
+        <h2>Triggers</h2>
+        @foreach (var trigger in Model.Summary.Triggers)
+        {
+            <div class="trigger-item">
+                <strong>@trigger.TriggerName</strong>
+                <p>Estado: @trigger.TriggerState</p>
+                <p>Proximo UTC: @(trigger.NextFireTimeUtc?.ToString("u") ?? "N/D")</p>
+                <p>Anterior UTC: @(trigger.PreviousFireTimeUtc?.ToString("u") ?? "N/D")</p>
+            </div>
+        }
+    </article>
+</section>
+
+<section class="jobs-panel">
+    <div class="section-header">
+        <h2>Historial basico</h2>
+        <p>Evidencia PoC almacenada fuera del modelo operativo del negocio.</p>
+    </div>
+    <div class="table-shell">
+        <table class="jobs-table">
+            <thead>
+            <tr>
+                <th>RunId</th>
+                <th>Nodo</th>
+                <th>Inicio UTC</th>
+                <th>Fin UTC</th>
+                <th>Duracion ms</th>
+                <th>Resultado</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.History)
+            {
+                <tr>
+                    <td>@item.RunId</td>
+                    <td>@item.NodeName</td>
+                    <td>@item.StartedAtUtc.ToString("u")</td>
+                    <td>@(item.FinishedAtUtc?.ToString("u") ?? "En ejecucion")</td>
+                    <td>@(item.DurationMs?.ToString() ?? "N/D")</td>
+                    <td>@item.Status</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
