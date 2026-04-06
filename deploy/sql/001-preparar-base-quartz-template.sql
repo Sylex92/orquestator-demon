@@ -1,6 +1,6 @@
 /*
   Plantilla para Infra/DBA.
-  Ejecutar en SSMS con SQLCMD Mode habilitado, o adaptar valores manualmente.
+  Ejecutar directamente en SSMS. NO requiere SQLCMD Mode.
 
   Este script:
   - crea base si no existe;
@@ -15,109 +15,88 @@
   adaptado al schema [quartz].
 */
 
-:setvar DatabaseName "DaemonQuartz"
-:setvar QuartzSchema "quartz"
-:setvar PocSchema "poc"
-:setvar RuntimeLogin "svc_daemon_quartz_runtime"
-:setvar PocLogin "svc_daemon_quartz_poc"
-:setvar CreatePocSchema "1"
-
 SET NOCOUNT ON;
-GO
 
-IF DB_ID(N'$(DatabaseName)') IS NULL
+DECLARE @DatabaseName sysname = N'DaemonQuartz';
+DECLARE @QuartzSchema sysname = N'quartz';
+DECLARE @PocSchema sysname = N'poc';
+DECLARE @RuntimeLogin sysname = N'svc_daemon_quartz_runtime';
+DECLARE @PocLogin sysname = N'svc_daemon_quartz_poc';
+DECLARE @CreatePocSchema bit = 1;
+
+DECLARE @sql nvarchar(max);
+
+IF DB_ID(@DatabaseName) IS NULL
 BEGIN
-    DECLARE @createDatabaseSql nvarchar(max) =
-        N'CREATE DATABASE ' + QUOTENAME(N'$(DatabaseName)') + N';';
-
-    EXEC (@createDatabaseSql);
-    PRINT 'Base creada: $(DatabaseName)';
+    SET @sql = N'CREATE DATABASE ' + QUOTENAME(@DatabaseName) + N';';
+    EXEC (@sql);
+    PRINT N'Base creada: ' + @DatabaseName;
 END
 ELSE
 BEGIN
-    PRINT 'Base ya existe: $(DatabaseName)';
-END
-GO
+    PRINT N'Base ya existe: ' + @DatabaseName;
+END;
 
-DECLARE @useDatabaseSql nvarchar(max) =
-    N'USE ' + QUOTENAME(N'$(DatabaseName)') + N';';
+SET @sql = N'
+USE ' + QUOTENAME(@DatabaseName) + N';
 
-EXEC (@useDatabaseSql);
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = N'$(QuartzSchema)')
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = @QuartzSchema)
 BEGIN
-    DECLARE @createQuartzSchemaSql nvarchar(max) =
-        N'CREATE SCHEMA ' + QUOTENAME(N'$(QuartzSchema)') + N';';
-
-    EXEC (@createQuartzSchemaSql);
-    PRINT 'Schema creado: $(QuartzSchema)';
+    EXEC(N''CREATE SCHEMA '' + QUOTENAME(@QuartzSchema) + N'';'');
+    PRINT N''Schema creado: '' + @QuartzSchema;
 END
 ELSE
 BEGIN
-    PRINT 'Schema ya existe: $(QuartzSchema)';
-END
-GO
+    PRINT N''Schema ya existe: '' + @QuartzSchema;
+END;
 
-IF '$(CreatePocSchema)' = '1'
+IF @CreatePocSchema = 1
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = N'$(PocSchema)')
+    IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = @PocSchema)
     BEGIN
-        DECLARE @createPocSchemaSql nvarchar(max) =
-            N'CREATE SCHEMA ' + QUOTENAME(N'$(PocSchema)') + N';';
-
-        EXEC (@createPocSchemaSql);
-        PRINT 'Schema creado: $(PocSchema)';
+        EXEC(N''CREATE SCHEMA '' + QUOTENAME(@PocSchema) + N'';'');
+        PRINT N''Schema creado: '' + @PocSchema;
     END
     ELSE
     BEGIN
-        PRINT 'Schema ya existe: $(PocSchema)';
-    END
-END
-GO
+        PRINT N''Schema ya existe: '' + @PocSchema;
+    END;
+END;
 
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'quartz_runtime_rw')
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N''quartz_runtime_rw'')
 BEGIN
     CREATE ROLE [quartz_runtime_rw];
-    PRINT 'Rol creado: quartz_runtime_rw';
+    PRINT N''Rol creado: quartz_runtime_rw'';
 END
 ELSE
 BEGIN
-    PRINT 'Rol ya existe: quartz_runtime_rw';
-END
-GO
+    PRINT N''Rol ya existe: quartz_runtime_rw'';
+END;
 
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'quartz_poc_rw')
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N''quartz_poc_rw'')
 BEGIN
     CREATE ROLE [quartz_poc_rw];
-    PRINT 'Rol creado: quartz_poc_rw';
+    PRINT N''Rol creado: quartz_poc_rw'';
 END
 ELSE
 BEGIN
-    PRINT 'Rol ya existe: quartz_poc_rw';
-END
-GO
+    PRINT N''Rol ya existe: quartz_poc_rw'';
+END;
 
-IF SUSER_ID(N'$(RuntimeLogin)') IS NULL
+IF SUSER_ID(@RuntimeLogin) IS NULL
 BEGIN
-    RAISERROR('El login $(RuntimeLogin) no existe en la instancia SQL. Crear login antes de continuar.', 16, 1);
-END
-GO
+    RAISERROR(N''El login %s no existe en la instancia SQL. Crear login antes de continuar.'', 16, 1, @RuntimeLogin);
+END;
 
-IF USER_ID(N'$(RuntimeLogin)') IS NULL
+IF USER_ID(@RuntimeLogin) IS NULL
 BEGIN
-    DECLARE @createRuntimeUserSql nvarchar(max) =
-        N'CREATE USER ' + QUOTENAME(N'$(RuntimeLogin)') +
-        N' FOR LOGIN ' + QUOTENAME(N'$(RuntimeLogin)') + N';';
-
-    EXEC (@createRuntimeUserSql);
-    PRINT 'Usuario creado para login runtime: $(RuntimeLogin)';
+    EXEC(N''CREATE USER '' + QUOTENAME(@RuntimeLogin) + N'' FOR LOGIN '' + QUOTENAME(@RuntimeLogin) + N'';'');
+    PRINT N''Usuario creado para login runtime: '' + @RuntimeLogin;
 END
 ELSE
 BEGIN
-    PRINT 'Usuario runtime ya existe: $(RuntimeLogin)';
-END
-GO
+    PRINT N''Usuario runtime ya existe: '' + @RuntimeLogin;
+END;
 
 IF NOT EXISTS
 (
@@ -127,37 +106,29 @@ IF NOT EXISTS
         ON rolePrincipal.principal_id = drm.role_principal_id
     INNER JOIN sys.database_principals memberPrincipal
         ON memberPrincipal.principal_id = drm.member_principal_id
-    WHERE rolePrincipal.name = N'quartz_runtime_rw'
-      AND memberPrincipal.name = N'$(RuntimeLogin)'
+    WHERE rolePrincipal.name = N''quartz_runtime_rw''
+      AND memberPrincipal.name = @RuntimeLogin
 )
 BEGIN
-    ALTER ROLE [quartz_runtime_rw] ADD MEMBER [$(RuntimeLogin)];
-    PRINT 'Login runtime agregado a quartz_runtime_rw';
-END
-GO
+    EXEC(N''ALTER ROLE [quartz_runtime_rw] ADD MEMBER '' + QUOTENAME(@RuntimeLogin) + N'';'');
+    PRINT N''Login runtime agregado a quartz_runtime_rw'';
+END;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON SCHEMA::[$(QuartzSchema)]
-    TO [quartz_runtime_rw];
-GO
+EXEC(N''GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::'' + QUOTENAME(@QuartzSchema) + N'' TO [quartz_runtime_rw];'');
 
-IF '$(CreatePocSchema)' = '1'
+IF @CreatePocSchema = 1
 BEGIN
-    IF SUSER_ID(N'$(PocLogin)') IS NULL
+    IF SUSER_ID(@PocLogin) IS NULL
     BEGIN
-        PRINT 'Aviso: el login $(PocLogin) no existe. Se omitira mapeo de usuario PoC.';
+        PRINT N''Aviso: el login '' + @PocLogin + N'' no existe. Se omitira mapeo de usuario PoC.'';
     END
     ELSE
     BEGIN
-        IF USER_ID(N'$(PocLogin)') IS NULL
+        IF USER_ID(@PocLogin) IS NULL
         BEGIN
-            DECLARE @createPocUserSql nvarchar(max) =
-                N'CREATE USER ' + QUOTENAME(N'$(PocLogin)') +
-                N' FOR LOGIN ' + QUOTENAME(N'$(PocLogin)') + N';';
-
-            EXEC (@createPocUserSql);
-            PRINT 'Usuario creado para login PoC: $(PocLogin)';
-        END
+            EXEC(N''CREATE USER '' + QUOTENAME(@PocLogin) + N'' FOR LOGIN '' + QUOTENAME(@PocLogin) + N'';'');
+            PRINT N''Usuario creado para login PoC: '' + @PocLogin;
+        END;
 
         IF NOT EXISTS
         (
@@ -167,32 +138,37 @@ BEGIN
                 ON rolePrincipal.principal_id = drm.role_principal_id
             INNER JOIN sys.database_principals memberPrincipal
                 ON memberPrincipal.principal_id = drm.member_principal_id
-            WHERE rolePrincipal.name = N'quartz_poc_rw'
-              AND memberPrincipal.name = N'$(PocLogin)'
+            WHERE rolePrincipal.name = N''quartz_poc_rw''
+              AND memberPrincipal.name = @PocLogin
         )
         BEGIN
-            ALTER ROLE [quartz_poc_rw] ADD MEMBER [$(PocLogin)];
-            PRINT 'Login PoC agregado a quartz_poc_rw';
-        END
+            EXEC(N''ALTER ROLE [quartz_poc_rw] ADD MEMBER '' + QUOTENAME(@PocLogin) + N'';'');
+            PRINT N''Login PoC agregado a quartz_poc_rw'';
+        END;
 
-        GRANT SELECT, INSERT, UPDATE, DELETE
-            ON SCHEMA::[$(PocSchema)]
-            TO [quartz_poc_rw];
-    END
-END
-GO
-
-PRINT 'PASO MANUAL OBLIGATORIO:';
-PRINT '1. Ejecutar el script oficial de Quartz para SQL Server.';
-PRINT '2. Adaptarlo para instalar tablas en el schema [$(QuartzSchema)].';
-PRINT '3. Mantener el prefijo QRTZ_.';
-PRINT '4. Validar luego con 002-validar-instalacion-quartz.sql.';
-GO
+        EXEC(N''GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::'' + QUOTENAME(@PocSchema) + N'' TO [quartz_poc_rw];'');
+    END;
+END;
 
 SELECT
     DB_NAME() AS DatabaseName,
     s.name AS SchemaName
 FROM sys.schemas s
-WHERE s.name IN (N'$(QuartzSchema)', N'$(PocSchema)')
+WHERE s.name IN (@QuartzSchema, @PocSchema)
 ORDER BY s.name;
-GO
+';
+
+EXEC sp_executesql
+    @sql,
+    N'@QuartzSchema sysname, @PocSchema sysname, @RuntimeLogin sysname, @PocLogin sysname, @CreatePocSchema bit',
+    @QuartzSchema = @QuartzSchema,
+    @PocSchema = @PocSchema,
+    @RuntimeLogin = @RuntimeLogin,
+    @PocLogin = @PocLogin,
+    @CreatePocSchema = @CreatePocSchema;
+
+PRINT N'PASO MANUAL OBLIGATORIO:';
+PRINT N'1. Ejecutar el script oficial de Quartz para SQL Server.';
+PRINT N'2. Adaptarlo para instalar tablas en el schema [' + @QuartzSchema + N'].';
+PRINT N'3. Mantener el prefijo QRTZ_.';
+PRINT N'4. Validar luego con 002-validar-instalacion-quartz.sql.';
