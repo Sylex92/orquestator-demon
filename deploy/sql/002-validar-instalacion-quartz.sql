@@ -9,8 +9,10 @@
 */
 
 SET NOCOUNT ON;
+GO
 
 DECLARE @DatabaseName sysname = N'DaemonQuartz';
+DECLARE @DatabaseNameQuoted nvarchar(260) = QUOTENAME(@DatabaseName);
 DECLARE @QuartzSchema sysname = N'quartz';
 DECLARE @PocSchema sysname = N'poc';
 DECLARE @RuntimeLogin sysname = N'svc_daemon_quartz_runtime';
@@ -21,13 +23,22 @@ BEGIN
     RAISERROR(N'La base %s no existe.', 16, 1, @DatabaseName);
     RETURN;
 END;
+GO
 
-DECLARE @sql nvarchar(max) = N'
-USE ' + QUOTENAME(@DatabaseName) + N';
+DECLARE @DatabaseName sysname = N'DaemonQuartz';
+DECLARE @DatabaseNameQuoted nvarchar(260) = QUOTENAME(@DatabaseName);
+DECLARE @QuartzSchema sysname = N'quartz';
+DECLARE @PocSchema sysname = N'poc';
+DECLARE @RuntimeLogin sysname = N'svc_daemon_quartz_runtime';
+DECLARE @ValidatePocTable bit = 1;
+
+DECLARE @Sql nvarchar(max) = N'USE ' + @DatabaseNameQuoted + N';';
+EXEC (@Sql);
 
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = @QuartzSchema)
 BEGIN
-    RAISERROR(N''No existe el schema %s.'', 16, 1, @QuartzSchema);
+    RAISERROR(N'No existe el schema %s.', 16, 1, @QuartzSchema);
+    RETURN;
 END;
 
 DECLARE @RequiredQuartzTables TABLE
@@ -37,17 +48,17 @@ DECLARE @RequiredQuartzTables TABLE
 
 INSERT INTO @RequiredQuartzTables (TableName)
 VALUES
-    (N''QRTZ_BLOB_TRIGGERS''),
-    (N''QRTZ_CALENDARS''),
-    (N''QRTZ_CRON_TRIGGERS''),
-    (N''QRTZ_FIRED_TRIGGERS''),
-    (N''QRTZ_JOB_DETAILS''),
-    (N''QRTZ_LOCKS''),
-    (N''QRTZ_PAUSED_TRIGGER_GRPS''),
-    (N''QRTZ_SCHEDULER_STATE''),
-    (N''QRTZ_SIMPLE_TRIGGERS''),
-    (N''QRTZ_SIMPROP_TRIGGERS''),
-    (N''QRTZ_TRIGGERS'');
+    (N'QRTZ_BLOB_TRIGGERS'),
+    (N'QRTZ_CALENDARS'),
+    (N'QRTZ_CRON_TRIGGERS'),
+    (N'QRTZ_FIRED_TRIGGERS'),
+    (N'QRTZ_JOB_DETAILS'),
+    (N'QRTZ_LOCKS'),
+    (N'QRTZ_PAUSED_TRIGGER_GRPS'),
+    (N'QRTZ_SCHEDULER_STATE'),
+    (N'QRTZ_SIMPLE_TRIGGERS'),
+    (N'QRTZ_SIMPROP_TRIGGERS'),
+    (N'QRTZ_TRIGGERS');
 
 ;WITH MissingTables AS
 (
@@ -81,63 +92,44 @@ IF EXISTS
     )
 )
 BEGIN
-    RAISERROR(N''Faltan tablas QRTZ_* en el schema %s. Revisar salida anterior.'', 16, 1, @QuartzSchema);
+    RAISERROR(N'Faltan tablas QRTZ_* en el schema %s. Revisar salida anterior.', 16, 1, @QuartzSchema);
+    RETURN;
 END;
 
 IF USER_ID(@RuntimeLogin) IS NULL
 BEGIN
-    RAISERROR(N''No existe el usuario de base para %s.'', 16, 1, @RuntimeLogin);
+    RAISERROR(N'No existe el usuario de base para %s.', 16, 1, @RuntimeLogin);
+    RETURN;
 END;
 
-DECLARE @CanSelect int;
-DECLARE @CanInsert int;
-DECLARE @CanUpdate int;
-DECLARE @CanDelete int;
-
-CREATE TABLE #Perms
+IF NOT EXISTS
 (
-    CanSelect int NOT NULL,
-    CanInsert int NOT NULL,
-    CanUpdate int NOT NULL,
-    CanDelete int NOT NULL
-);
-
-DECLARE @PermSql nvarchar(max) =
-    N''EXECUTE AS USER = '' + QUOTENAME(@RuntimeLogin, '''''''') + N'';
-      SELECT
-          HAS_PERMS_BY_NAME(QUOTENAME(@QuartzSchema), ''''SCHEMA'''', ''''SELECT'''') AS CanSelect,
-          HAS_PERMS_BY_NAME(QUOTENAME(@QuartzSchema), ''''SCHEMA'''', ''''INSERT'''') AS CanInsert,
-          HAS_PERMS_BY_NAME(QUOTENAME(@QuartzSchema), ''''SCHEMA'''', ''''UPDATE'''') AS CanUpdate,
-          HAS_PERMS_BY_NAME(QUOTENAME(@QuartzSchema), ''''SCHEMA'''', ''''DELETE'''') AS CanDelete;
-      REVERT;'';
-
-INSERT INTO #Perms (CanSelect, CanInsert, CanUpdate, CanDelete)
-EXEC sp_executesql @PermSql, N''@QuartzSchema sysname'', @QuartzSchema = @QuartzSchema;
-
-SELECT
-    @CanSelect = CanSelect,
-    @CanInsert = CanInsert,
-    @CanUpdate = CanUpdate,
-    @CanDelete = CanDelete
-FROM #Perms;
-
-DROP TABLE #Perms;
-
-IF (@CanSelect <> 1 OR @CanInsert <> 1 OR @CanUpdate <> 1 OR @CanDelete <> 1)
+    SELECT 1
+    FROM sys.database_role_members drm
+    INNER JOIN sys.database_principals rolePrincipal
+        ON rolePrincipal.principal_id = drm.role_principal_id
+    INNER JOIN sys.database_principals memberPrincipal
+        ON memberPrincipal.principal_id = drm.member_principal_id
+    WHERE rolePrincipal.name = N'quartz_runtime_rw'
+      AND memberPrincipal.name = @RuntimeLogin
+)
 BEGIN
-    RAISERROR(N''El usuario %s no tiene permisos minimos completos sobre el schema %s.'', 16, 1, @RuntimeLogin, @QuartzSchema);
+    RAISERROR(N'El usuario %s no pertenece al rol quartz_runtime_rw.', 16, 1, @RuntimeLogin);
+    RETURN;
 END;
 
 IF @ValidatePocTable = 1
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = @PocSchema)
     BEGIN
-        RAISERROR(N''Se solicito validar PoC pero no existe el schema %s.'', 16, 1, @PocSchema);
+        RAISERROR(N'Se solicito validar PoC pero no existe el schema %s.', 16, 1, @PocSchema);
+        RETURN;
     END;
 
-    IF OBJECT_ID(QUOTENAME(@PocSchema) + N''.[JobExecutionLog]'', ''U'') IS NULL
+    IF OBJECT_ID(QUOTENAME(@PocSchema) + N'.[JobExecutionLog]', 'U') IS NULL
     BEGIN
-        RAISERROR(N''No existe la tabla [%s].[JobExecutionLog].'', 16, 1, @PocSchema);
+        RAISERROR(N'No existe la tabla [%s].[JobExecutionLog].', 16, 1, @PocSchema);
+        RETURN;
     END;
 END;
 
@@ -153,16 +145,8 @@ FROM sys.tables t
 INNER JOIN sys.schemas s
     ON s.schema_id = t.schema_id
 WHERE s.name = @QuartzSchema
-  AND t.name LIKE N''QRTZ[_]%''
+  AND t.name LIKE N'QRTZ[_]%'
 ORDER BY t.name;
-';
-
-EXEC sp_executesql
-    @sql,
-    N'@QuartzSchema sysname, @PocSchema sysname, @RuntimeLogin sysname, @ValidatePocTable bit',
-    @QuartzSchema = @QuartzSchema,
-    @PocSchema = @PocSchema,
-    @RuntimeLogin = @RuntimeLogin,
-    @ValidatePocTable = @ValidatePocTable;
 
 PRINT N'Validacion completada correctamente.';
+GO
