@@ -37,7 +37,7 @@ GO
 DECLARE @QuartzSchema sysname = N'quartz';
 DECLARE @PocSchema sysname = N'poc';
 DECLARE @RuntimeLogin sysname = N'svc_daemon_quartz_runtime';
-DECLARE @PocLogin sysname = N'svc_daemon_quartz_poc';
+DECLARE @PocLogin sysname = N'svc_daemon_quartz_runtime';
 DECLARE @CreatePocSchema bit = 1;
 
 DECLARE @DatabaseName sysname = N'DaemonQuartz';
