@@ -65,8 +65,7 @@ Script helper:
 
 Se deben cargar al menos:
 
-- `orquestator/quartz/sql/quartz_app/password`
-- `orquestator/quartz/sql/quartz_poc/password`
+- `orquestator/quartz/sql/runtime/password`
 
 ## Validación paso a paso
 

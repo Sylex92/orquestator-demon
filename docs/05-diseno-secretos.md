@@ -56,11 +56,11 @@ Implementación temporal:
 {
   "Secrets": {
     "LogicalToCredentialTarget": {
-      "QuartzDbPassword": "orquestator/quartz/sql/quartz_app/password"
+      "QuartzRuntimeDbPassword": "orquestator/quartz/sql/runtime/password"
     }
   },
   "Quartz": {
-    "ConnectionStringTemplate": "Server=SQL-QUARTZ-CLUSTER;Database=DaemonQuartz;User ID=quartz_app;Password={secret:QuartzDbPassword};Encrypt=True;TrustServerCertificate=False;"
+    "ConnectionStringTemplate": "Server=SQL-QUARTZ-CLUSTER;Database=DaemonQuartz;User ID=svc_daemon_quartz_runtime;Password={secret:QuartzRuntimeDbPassword};Encrypt=True;TrustServerCertificate=False;"
   }
 }
 ```
@@ -68,10 +68,12 @@ Implementación temporal:
 ### En ejecución
 
 1. La app lee `ConnectionStringTemplate`.
-2. Detecta el token `{secret:QuartzDbPassword}`.
+2. Detecta el token `{secret:QuartzRuntimeDbPassword}`.
 3. Llama a `ISecretProvider`.
 4. `CredentialManagerSecretProvider` lee el target configurado.
 5. La conexión final se construye en memoria.
+
+En la PoC actual, el mismo login SQL y el mismo secreto real pueden reutilizarse tanto para la persistencia de Quartz como para la tabla opcional de historial PoC.
 
 ## Qué no se hace
 
@@ -90,8 +92,8 @@ Ejemplo:
 
 ```powershell
 .\deploy\scripts\set-credential-manager-secret.ps1 `
-  -TargetName "orquestator/quartz/sql/quartz_app/password" `
-  -UserName "quartz_app" `
+  -TargetName "orquestator/quartz/sql/runtime/password" `
+  -UserName "svc_daemon_quartz_runtime" `
   -Secret "Cambiar-este-valor"
 ```
 

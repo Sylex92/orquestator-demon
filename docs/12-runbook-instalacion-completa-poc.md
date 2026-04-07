@@ -69,7 +69,7 @@ Importante:
 - Tablas `QRTZ_*`.
 - Opcional schema `[poc]` y tabla `[poc].[JobExecutionLog]`.
 - Usuario tecnico runtime para Quartz.
-- Usuario tecnico opcional para historial PoC.
+- El mismo usuario tecnico runtime puede reutilizarse para el historial PoC.
 
 ### Nodo 1 y Nodo 2
 
@@ -170,28 +170,21 @@ Script:
 
 Secretos minimos:
 
-- `orquestator/quartz/sql/quartz_app/password`
-- `orquestator/quartz/sql/quartz_poc/password`
+- `orquestator/quartz/sql/runtime/password`
 
 Ejemplo:
 
 ```powershell
 .\deploy\scripts\set-credential-manager-secret.ps1 `
-  -TargetName "orquestator/quartz/sql/quartz_app/password" `
-  -UserName "quartz_app" `
-  -Secret "<PASSWORD_REAL>"
-```
-
-```powershell
-.\deploy\scripts\set-credential-manager-secret.ps1 `
-  -TargetName "orquestator/quartz/sql/quartz_poc/password" `
-  -UserName "quartz_poc" `
+  -TargetName "orquestator/quartz/sql/runtime/password" `
+  -UserName "svc_daemon_quartz_runtime" `
   -Secret "<PASSWORD_REAL>"
 ```
 
 Importante:
 
 - esto se hace en cada nodo donde corra el proceso;
+- el mismo secreto puede resolver Quartz y el historial PoC;
 - no guardar secretos reales en `appsettings`.
 
 ## Fase 4. Validar prerrequisitos de cada nodo
@@ -206,9 +199,7 @@ Ejemplo para Nodo 1 con Web/API/Worker:
 .\deploy\scripts\test-node-prereqs.ps1 `
   -SqlServer "SQL-QUARTZ-CLUSTER" `
   -SqlPort 1433 `
-  -CredentialTargets `
-    "orquestator/quartz/sql/quartz_app/password", `
-    "orquestator/quartz/sql/quartz_poc/password" `
+  -CredentialTargets "orquestator/quartz/sql/runtime/password" `
   -CheckIis
 ```
 

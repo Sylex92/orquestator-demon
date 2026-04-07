@@ -161,11 +161,10 @@ Notas:
 ## Manejo de secretos actual
 
 - El archivo de configuración solo contiene referencias lógicas:
-  - `QuartzDbPassword`
-  - `QuartzHistoryDbPassword`
+  - `QuartzRuntimeDbPassword`
 - `ISecretProvider` resuelve el valor real.
 - En esta fase se usa `CredentialManagerSecretProvider`.
-- Cada nodo debe tener cargados localmente sus secretos.
+- Cada nodo debe tener cargado localmente el secreto requerido por el runtime.
 
 ## Preparación para migrar a Key Vault
 
