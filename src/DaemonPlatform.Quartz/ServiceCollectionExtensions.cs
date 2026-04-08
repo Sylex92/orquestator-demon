@@ -55,7 +55,6 @@ public static class ServiceCollectionExtensions
         {
             ["quartz.scheduler.instanceName"] = options.SchedulerName,
             ["quartz.scheduler.instanceId"] = options.InstanceId,
-            ["quartz.scheduler.skipUpdateCheck"] = "true",
             ["quartz.serializer.type"] = "stj",
             ["quartz.threadPool.type"] = "Quartz.Simpl.DefaultThreadPool, Quartz",
             ["quartz.threadPool.threadCount"] = options.ThreadCount.ToString(CultureInfo.InvariantCulture),
