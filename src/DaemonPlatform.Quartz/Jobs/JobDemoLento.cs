@@ -1,6 +1,7 @@
 using DaemonPlatform.Core.Runtime;
 using Microsoft.Extensions.Logging;
 using Quartz;
+using System.Globalization;
 
 namespace DaemonPlatform.Quartz.Jobs;
 
@@ -13,7 +14,10 @@ public sealed class JobDemoLento(
 {
     protected override async Task<string> ExecuteCoreAsync(IJobExecutionContext context, CancellationToken cancellationToken)
     {
-        var delaySeconds = context.MergedJobDataMap.GetInt("DelaySeconds");
+        var delayValue = context.MergedJobDataMap.GetString("DelaySeconds");
+        var delaySeconds = int.TryParse(delayValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedDelay)
+            ? parsedDelay
+            : 0;
         var totalDelay = TimeSpan.FromSeconds(delaySeconds <= 0 ? 150 : delaySeconds);
         var start = DateTimeOffset.UtcNow;
 

@@ -3,6 +3,7 @@ using DaemonPlatform.Quartz.Jobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
+using System.Globalization;
 
 namespace DaemonPlatform.Quartz;
 
@@ -43,7 +44,7 @@ public sealed class DemoJobCatalogBootstrapper(
             .WithIdentity(QuartzKeys.SlowJobKey)
             .StoreDurably()
             .RequestRecovery()
-            .UsingJobData("DelaySeconds", demoJobsOptions.Value.SlowDurationSeconds)
+            .UsingJobData("DelaySeconds", demoJobsOptions.Value.SlowDurationSeconds.ToString(CultureInfo.InvariantCulture))
             .WithDescription("Job demo lento para validar failover y recovery.")
             .Build();
 
