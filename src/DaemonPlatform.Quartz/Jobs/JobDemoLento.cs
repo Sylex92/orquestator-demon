@@ -19,7 +19,7 @@ public sealed class JobDemoLento(
 
         while (DateTimeOffset.UtcNow - start < totalDelay)
         {
-            logger.LogInformation(
+            Logger.LogInformation(
                 "JobDemoLento sigue ejecutándose. FireInstanceId={FireInstanceId}, Recovering={Recovering}.",
                 context.FireInstanceId,
                 context.Recovering);

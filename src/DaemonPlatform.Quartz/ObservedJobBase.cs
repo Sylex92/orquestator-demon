@@ -11,6 +11,8 @@ public abstract class ObservedJobBase<TJob>(
     ILogger<TJob> logger) : IJob
     where TJob : class
 {
+    protected ILogger<TJob> Logger => logger;
+
     public async Task Execute(IJobExecutionContext context)
     {
         var runId = Guid.NewGuid();

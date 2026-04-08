@@ -113,6 +113,9 @@ public sealed class QuartzAdministrationService(
         var jobDetail = await scheduler.GetJobDetail(key, cancellationToken);
         var triggers = await scheduler.GetTriggersOfJob(key, cancellationToken);
         var lastExecution = await executionLogStore.GetLastExecutionAsync(key.Group, key.Name, cancellationToken);
+        var jobDescription = jobDetail?.Description ?? string.Empty;
+        var durable = jobDetail?.Durable ?? false;
+        var requestsRecovery = jobDetail?.RequestsRecovery ?? false;
 
         var triggerItems = new List<TriggerInfoResponse>();
         foreach (var trigger in triggers)
@@ -137,9 +140,9 @@ public sealed class QuartzAdministrationService(
         return new JobSummaryResponse(
             key.Group,
             key.Name,
-            jobDetail.Description ?? string.Empty,
-            jobDetail.Durable,
-            jobDetail.RequestsRecovery,
+            jobDescription,
+            durable,
+            requestsRecovery,
             effectiveState,
             sortedTriggers,
             sortedTriggers.FirstOrDefault(item => item.NextFireTimeUtc.HasValue)?.NextFireTimeUtc,
