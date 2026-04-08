@@ -240,6 +240,10 @@ Importante:
 3. Usar la configuracion de Nodo 1.
 4. Registrar el Windows Service.
 
+Plantilla sugerida:
+
+- [appsettings.Worker.Node1.Local.json](/C:/Users/mario.sabaleta/Documents/GitHub/orquestator-demon/deploy/templates/appsettings.Worker.Node1.Local.json)
+
 Script:
 
 - [install-worker-service.ps1](/C:/Users/mario.sabaleta/Documents/GitHub/orquestator-demon/deploy/scripts/install-worker-service.ps1)
@@ -250,18 +254,22 @@ Ejemplo:
 .\deploy\scripts\install-worker-service.ps1 `
   -PublishDir .\deploy\published\DaemonHost.Worker `
   -ServiceName "DaemonPlatform.Worker" `
-  -NodeConfigFile .\src\DaemonHost.Worker\appsettings.Node1.json
+  -NodeConfigFile .\deploy\templates\appsettings.Worker.Node1.Local.json
 ```
 
 ### Nodo 2
 
 Usar el mismo procedimiento, cambiando el archivo de nodo:
 
+Plantilla sugerida:
+
+- [appsettings.Worker.Node2.Local.json](/C:/Users/mario.sabaleta/Documents/GitHub/orquestator-demon/deploy/templates/appsettings.Worker.Node2.Local.json)
+
 ```powershell
 .\deploy\scripts\install-worker-service.ps1 `
   -PublishDir .\deploy\published\DaemonHost.Worker `
   -ServiceName "DaemonPlatform.Worker" `
-  -NodeConfigFile .\src\DaemonHost.Worker\appsettings.Node2.json
+  -NodeConfigFile .\deploy\templates\appsettings.Worker.Node2.Local.json
 ```
 
 ## Configuracion real del cluster
