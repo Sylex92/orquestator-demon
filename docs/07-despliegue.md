@@ -91,6 +91,13 @@ Se deben cargar al menos:
 - validar secreto en Credential Manager,
 - validar que `appsettings.Local.json` corresponda al nodo correcto.
 
+### `dotnet publish` o Visual Studio no encuentran paquetes NuGet
+
+- validar que el repositorio use [NuGet.config](/C:/Users/mario.sabaleta/Documents/GitHub/orquestator-demon/NuGet.config),
+- validar salida de `dotnet nuget list source`,
+- confirmar que `nuget.org` no este bloqueado por proxy o politica corporativa,
+- si Visual Studio usa feeds offline o internos, restaurar desde la raiz del repo para que tome el `NuGet.config` del proyecto.
+
 ### La API no lista jobs
 
 - validar acceso a SQL Quartz,
